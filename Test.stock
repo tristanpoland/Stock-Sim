@@ -6,12 +6,12 @@ TIME 10d,12w,2y
 
 // ^ In this case we test for each compo of invest ammounts and timeframes returning each individually
 
-//         Ticker    Name (Arbitrary)
-//         |         |
-INVESTMENT MSFT      Microsoft
-INVESTMENT AAPL      Apple
+//         Ticker Name (Arbitrary)
+//         |      |
+INVESTMENT MSFT   Microsoft
+INVESTMENT AAPL   Apple
 
-PATTERN MyPattern Apple,Microsoft,Apple,Apple,Microsoft
+PATTERN MyPattern  Apple,Microsoft,Apple,Apple,Microsoft
 PATTERN MyPattern2 Microsoft,Microsoft,Apple,Apple
 
 // ^ In this case we test for each pattern we will run a test to see what the gains for each combination of 
