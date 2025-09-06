@@ -7,7 +7,7 @@ TIME 10d,12w,2y
 // ^ In this case we test for each compo of invest ammounts and timeframes returning each individually
 
 //         Ticker    Name (Arbitrary)
-           |         |
+//         |         |
 INVESTMENT MSFT      Microsoft
 INVESTMENT AAPL      Apple
 

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Stock DSL",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#time-units"
+    },
+    {
+      "include": "#tickers"
+    },
+    {
+      "include": "#comments"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.stock-dsl",
+          "match": "\\b(INVEST|TIME|INVESTMENT|PATTERN|TEST)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.stock-dsl",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.stock-dsl",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.decimal.stock-dsl",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "time-units": {
+      "patterns": [
+        {
+          "name": "constant.numeric.time.stock-dsl",
+          "match": "\\b\\d+[dwy]\\b"
+        }
+      ]
+    },
+    "tickers": {
+      "patterns": [
+        {
+          "name": "entity.name.type.stock-dsl",
+          "match": "\\b[A-Z]{2,5}\\b"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.stock-dsl",
+          "begin": "//",
+          "end": "$"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.stock-dsl"
+}
