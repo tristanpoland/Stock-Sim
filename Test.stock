@@ -10,6 +10,14 @@ TIME 10d,12w,2y
 //         |      |
 INVESTMENT MSFT   Microsoft
 INVESTMENT AAPL   Apple
+INVESTMENT NVDA   Nvidia
+INVESTMENT TSLA   Tesla
+INVESTMENT AMZN   Amazon
+INVESTMENT JNJ    Johnson&Johnson
+INVESTMENT XOM    ExxonMobil
+INVESTMENT UNH    UnitedHealth
+INVESTMENT V      Visa
+INVESTMENT COST   Costco
 
 PATTERN MyPattern  Apple,Microsoft,Apple,Apple,Microsoft
 PATTERN MyPattern2 Microsoft,Microsoft,Apple,Apple
@@ -18,3 +26,27 @@ PATTERN MyPattern2 Microsoft,Microsoft,Apple,Apple
 
 TEST MyPattern
 TEST MyPattern2
+
+// Tech momentum: riding recent winners
+PATTERN TechMomentum Nvidia,Microsoft,Apple,Nvidia,Amazon,Apple,Microsoft,Nvidia
+TEST TechMomentum
+
+// Sector rotation: tech, energy, healthcare, consumer
+PATTERN SectorRotation Microsoft,ExxonMobil,Johnson&Johnson,Costco,Nvidia,UnitedHealth,Visa,Amazon
+TEST SectorRotation
+
+// Value picks: defensive and stable
+PATTERN ValuePicks Johnson&Johnson,UnitedHealth,Visa,Costco,Johnson&Johnson,UnitedHealth,Visa,Costco
+TEST ValuePicks
+
+// Earnings season: buy before earnings, rotate
+PATTERN EarningsSeason Nvidia,Amazon,Microsoft,Apple,Tesla,Nvidia,Amazon,Microsoft
+TEST EarningsSeason
+
+// Long-term growth: hold top performers
+PATTERN LongTermGrowth Nvidia,Microsoft,Apple,Amazon,Tesla,Nvidia,Microsoft,Apple
+TEST LongTermGrowth
+
+// Short-term swing: alternate high-volatility stocks
+PATTERN ShortTermSwing Tesla,Nvidia,Amazon,Tesla,Nvidia,Amazon,Tesla,Nvidia
+TEST ShortTermSwing
