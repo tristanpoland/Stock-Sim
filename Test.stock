@@ -2,7 +2,7 @@
 INVEST 10,100,1000
 
 // Test many time frames
-TIME 10d,12w,2y
+TIME 10d,12w,2y,8y,45y
 
 // ^ In this case we test for each compo of invest ammounts and timeframes returning each individually
 

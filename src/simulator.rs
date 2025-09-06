@@ -101,7 +101,10 @@ impl Simulator {
 
             // Calculate how many shares we can buy with current amount
             let shares_to_buy = current_amount / stock_price;
-            let amount_invested = shares_to_buy * stock_price;
+            let amount_invested = match shares_to_buy.checked_mul(stock_price) {
+                Some(amount) => amount,
+                None => current_amount, // If overflow, use full current amount
+            };
 
             trades.push(Trade {
                 week,
@@ -111,14 +114,40 @@ impl Simulator {
                 amount_invested,
             });
 
-            // Apply average gain based on historical data
-            let avg_gain = self.yahoo_client.calculate_average_gain(&investment.ticker, 30)?; // 30-day average
-            current_amount = amount_invested * (Decimal::ONE + avg_gain);
+            // Apply gains only at the very end of the entire simulation
+            // This represents the actual performance over the time period
+            if week == total_weeks {
+                let daily_avg_gain = self.yahoo_client.calculate_average_gain(&investment.ticker, 30)?;
+                
+                // Convert daily average to total period performance
+                // Use the average daily gain for the last stock traded to represent overall performance
+                let days_in_period = match time_frame.unit {
+                    TimeUnit::Days => time_frame.duration,
+                    TimeUnit::Weeks => time_frame.duration * 7,
+                    TimeUnit::Years => time_frame.duration * 365,
+                };
+                
+                // Simple linear application of daily gains over the period
+                // This represents cumulative market movement without compounding
+                let total_return = daily_avg_gain * Decimal::from(days_in_period);
+                
+                current_amount = current_amount * (Decimal::ONE + total_return);
+            }
         }
 
         let total_gain = current_amount - initial_amount;
         let percentage_gain = if initial_amount > Decimal::ZERO {
-            (total_gain / initial_amount) * Decimal::from(100)
+            match (total_gain / initial_amount).checked_mul(Decimal::from(100)) {
+                Some(gain) => gain,
+                None => {
+                    // Handle overflow in percentage calculation
+                    if total_gain >= Decimal::ZERO {
+                        Decimal::try_from(999999f64)? // Cap at 999,999% gain
+                    } else {
+                        Decimal::try_from(-100f64)? // Cap at 100% loss
+                    }
+                }
+            }
         } else {
             Decimal::ZERO
         };
