@@ -1,72 +1,55 @@
 use clap::Parser;
-use rust_decimal::Decimal;
-use rust_decimal::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-// Define the structure for our TOML configuration file
-#[derive(Debug, Serialize, Deserialize)]
-struct Config {
-    initial_amount: Decimal,
-    weeks: u32,
-    gains: Vec<Decimal>,
-}
+mod dsl;
+mod yahoo_finance;
+mod simulator;
+
+use dsl::StockDSL;
+use simulator::Simulator;
+
 
 // Define the command-line arguments
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Path to a TOML configuration file. If not specified, the program looks for a 'config.toml' in the current directory.
+    /// Path to a .stock DSL file. If not specified, the program looks for a 'Test.stock' in the current directory.
     #[clap(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
+    stock_file: Option<PathBuf>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
-    let config_path = args.config.unwrap_or_else(|| PathBuf::from("config.toml"));
+    let stock_file_path = args.stock_file.unwrap_or_else(|| PathBuf::from("Test.stock"));
 
-    // Read the configuration from the TOML file
-    let config = match read_config(&config_path) {
-        Ok(c) => c,
+    // Parse the DSL file
+    let dsl = match StockDSL::parse_file(&stock_file_path) {
+        Ok(d) => d,
         Err(e) => {
-            eprintln!("Error reading configuration from {:?}: {}", config_path, e);
+            eprintln!("Error parsing stock file {:?}: {}", stock_file_path, e);
             return;
         }
     };
 
-    let mut total_amount = config.initial_amount;
-    let num_stocks = config.gains.len();
+    println!("Stock Simulator - Processing {:?}\n", stock_file_path);
+    println!("Investment amounts: {:?}", dsl.invest_amounts);
+    println!("Time frames: {:?}", dsl.time_frames);
+    println!("Investments: {:?}", dsl.investments.keys().collect::<Vec<_>>());
+    println!("Patterns: {:?}", dsl.patterns.keys().collect::<Vec<_>>());
+    println!("Tests to run: {:?}\n", dsl.tests);
 
-    if num_stocks == 0 {
-        eprintln!("Error: The config file must contain at least one stock gain.");
-        return;
+    // Create simulator and run simulations
+    let mut simulator = Simulator::new();
+    
+    println!("Fetching stock data from Yahoo Finance...");
+    match simulator.run_simulations(&dsl).await {
+        Ok(results) => {
+            Simulator::print_results(&results);
+        }
+        Err(e) => {
+            eprintln!("Error running simulations: {}", e);
+        }
     }
-
-    println!(
-        "Simulating {} weeks with an initial amount of {} from {:?}...",
-        config.weeks, config.initial_amount, config_path
-    );
-
-    for week in 1..=config.weeks {
-        let stock_index = ((week - 1) as usize) % num_stocks;
-        let weekly_gain = config.gains[stock_index];
-
-        total_amount += weekly_gain;
-    }
-
-    let total_gained = total_amount - config.initial_amount;
-    let percentage_gain = (total_gained / config.initial_amount) * Decimal::from(100);
-
-    println!("\n--- Results ---");
-    println!("Final Total Amount: {:.2}", total_amount);
-    println!("Total Amount Gained: {:.2}", total_gained);
-    println!("Percentage Gain: {:.2}%", percentage_gain);
 }
 
-// Helper function to read the TOML file
-fn read_config(path: &Path) -> Result<Config, Box<dyn std::error::Error>> {
-    let content = fs::read_to_string(path)?;
-    let config: Config = toml::from_str(&content)?;
-    Ok(config)
-}
