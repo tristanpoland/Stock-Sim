@@ -4,7 +4,7 @@ version = "1.0.1"
 edition = "2024"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
 clap = { version = "4.5", features = ["derive"] }
 rust_decimal = "1.35"
-serde = { version = "1.0", features = ["derive"] }
-toml = "0.8"
+toml = "0.9.5"
