@@ -19,10 +19,10 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Get package name from crates/horizon/Cargo.toml
+      - name: Get package name from Cargo.toml
         id: get-name
         run: |
-          PACKAGE_NAME=$(grep -m1 '^name' crates/horizon/Cargo.toml | sed 's/name\s*=\s*"\(.*\)"/\1/')
+          PACKAGE_NAME=$(grep -m1 '^name' Cargo.toml | sed 's/name\s*=\s*"\(.*\)"/\1/')
           PACKAGE_NAME=$(echo "$PACKAGE_NAME" | tr -d '[:space:]')
           echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
           echo "Package name: [$PACKAGE_NAME]"
@@ -30,9 +30,9 @@ jobs:
       - name: Check if Cargo.toml version changed
         id: check
         run: |
-          CURRENT_VERSION=$(grep -m1 version crates/horizon/Cargo.toml | cut -d '"' -f2)
+          CURRENT_VERSION=$(grep -m1 version Cargo.toml | cut -d '"' -f2)
           git checkout HEAD^1
-          PREVIOUS_VERSION=$(grep -m1 version crates/horizon/Cargo.toml | cut -d '"' -f2)
+          PREVIOUS_VERSION=$(grep -m1 version Cargo.toml | cut -d '"' -f2)
           if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
