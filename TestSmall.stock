@@ -1,0 +1,13 @@
+// Test with smaller, more realistic timeframes
+INVEST 1000
+
+// Test shorter time frames for realistic results
+TIME 1y,2y
+
+INVESTMENT MSFT   Microsoft
+INVESTMENT AAPL   Apple
+INVESTMENT NVDA   Nvidia
+
+PATTERN TechMomentum Nvidia,Microsoft,Apple,Nvidia
+
+TEST TechMomentum

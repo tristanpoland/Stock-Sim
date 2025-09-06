@@ -1,0 +1,11 @@
+// Test long-term realistic returns
+INVEST 1000
+
+// Test long-term time frames
+TIME 8y,45y
+
+INVESTMENT NVDA   Nvidia
+
+PATTERN TechMomentum Nvidia
+
+TEST TechMomentum

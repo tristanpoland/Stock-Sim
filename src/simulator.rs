@@ -1,6 +1,7 @@
 use crate::dsl::{StockDSL, TimeFrame, TimeUnit};
 use crate::yahoo_finance::YahooFinanceClient;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -86,6 +87,14 @@ impl Simulator {
             return Err("Empty pattern".into());
         }
 
+        // Calculate total time period in years for realistic compounding
+        let total_years = match time_frame.unit {
+            TimeUnit::Days => Decimal::try_from(time_frame.duration as f64 / 365.25)?,
+            TimeUnit::Weeks => Decimal::try_from(time_frame.duration as f64 / 52.0)?,
+            TimeUnit::Years => Decimal::from(time_frame.duration),
+        };
+
+        // Simulate weekly trading but apply realistic annual returns
         for week in 1..=total_weeks {
             let company_index = ((week - 1) as usize) % pattern.len();
             let company_name = &pattern[company_index];
@@ -99,40 +108,75 @@ impl Simulator {
             let stock_data = self.yahoo_client.get_stock_data(&investment.ticker).await?;
             let stock_price = stock_data.current_price;
 
-            // Calculate how many shares we can buy with current amount
-            let shares_to_buy = current_amount / stock_price;
-            let amount_invested = match shares_to_buy.checked_mul(stock_price) {
-                Some(amount) => amount,
-                None => current_amount, // If overflow, use full current amount
+            // For the first trade, record the initial investment details
+            if week == 1 {
+                let shares_to_buy = current_amount / stock_price;
+                trades.push(Trade {
+                    week,
+                    company: company_name.clone(),
+                    price: stock_price,
+                    shares_bought: shares_to_buy,
+                    amount_invested: current_amount,
+                });
+            }
+        }
+
+        // Apply realistic compound growth over the entire time period
+        if total_years > Decimal::ZERO {
+            // Get a weighted average annual return from all stocks in the pattern
+            let mut total_weighted_return = Decimal::ZERO;
+            let mut total_weight = Decimal::ZERO;
+            
+            for company_name in pattern {
+                if let Some(investment) = investments.values().find(|inv| inv.name == *company_name) {
+                    let annual_return = self.yahoo_client.calculate_annual_return(&investment.ticker)?;
+                    total_weighted_return += annual_return;
+                    total_weight += Decimal::ONE;
+                }
+            }
+            
+            let avg_annual_return = if total_weight > Decimal::ZERO {
+                total_weighted_return / total_weight
+            } else {
+                Decimal::ZERO
             };
 
-            trades.push(Trade {
-                week,
-                company: company_name.clone(),
-                price: stock_price,
-                shares_bought: shares_to_buy,
-                amount_invested,
-            });
-
-            // Apply gains only at the very end of the entire simulation
-            // This represents the actual performance over the time period
-            if week == total_weeks {
-                let daily_avg_gain = self.yahoo_client.calculate_average_gain(&investment.ticker, 30)?;
+            // Apply compound growth with realistic bounds
+            let growth_factor = if total_years <= Decimal::from(5) {
+                // For periods ≤ 5 years, allow normal compound growth
+                let annual_multiplier = Decimal::ONE + avg_annual_return;
+                let mut compound_factor = Decimal::ONE;
+                let whole_years = total_years.floor();
                 
-                // Convert daily average to total period performance
-                // Use the average daily gain for the last stock traded to represent overall performance
-                let days_in_period = match time_frame.unit {
-                    TimeUnit::Days => time_frame.duration,
-                    TimeUnit::Weeks => time_frame.duration * 7,
-                    TimeUnit::Years => time_frame.duration * 365,
+                for _ in 0..whole_years.to_u32().unwrap_or(0) {
+                    compound_factor *= annual_multiplier;
+                }
+                
+                let fractional_year = total_years - whole_years;
+                if fractional_year > Decimal::ZERO {
+                    compound_factor *= Decimal::ONE + (avg_annual_return * fractional_year);
+                }
+                compound_factor
+            } else {
+                // For periods > 5 years, use more conservative modeling
+                // Real market volatility and mean reversion make sustained high returns unlikely
+                
+                // Cap effective annual return for long periods (market reversion)
+                let long_term_return = if avg_annual_return > Decimal::try_from(0.15)? {
+                    // Even great stocks revert towards ~15% long-term
+                    Decimal::try_from(0.15)?
+                } else if avg_annual_return < Decimal::try_from(-0.1)? {
+                    // Floor at -10% long-term (market recovery)
+                    Decimal::try_from(-0.1)?
+                } else {
+                    avg_annual_return
                 };
                 
-                // Simple linear application of daily gains over the period
-                // This represents cumulative market movement without compounding
-                let total_return = daily_avg_gain * Decimal::from(days_in_period);
-                
-                current_amount = current_amount * (Decimal::ONE + total_return);
-            }
+                // Use linear approximation for very long periods to avoid exponential explosion
+                Decimal::ONE + (long_term_return * total_years)
+            };
+            
+            current_amount *= growth_factor;
         }
 
         let total_gain = current_amount - initial_amount;
@@ -177,7 +221,7 @@ impl Simulator {
             
             if !result.trades.is_empty() {
                 println!("Sample Trades:");
-                for (i, trade) in result.trades.iter().take(5).enumerate() {
+                for trade in result.trades.iter().take(5) {
                     println!("  Week {}: {} @ ${:.2} ({:.4} shares)",
                         trade.week, trade.company, trade.price, trade.shares_bought);
                 }
