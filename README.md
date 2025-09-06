@@ -1,20 +1,27 @@
 # Stock Simulator
 
-A simple command-line stock market simulator written in Rust that models investment growth over time using configurable weekly gains.
+A Rust-based stock market simulation tool that uses a custom DSL (Domain Specific Language) to define investment strategies and test their performance using real Yahoo Finance data.
 
 ## Features
 
-- Simulate stock investments over a specified number of weeks
-- Support for multiple stocks with different gain rates
-- Configurable through TOML configuration files
-- Precise decimal calculations using `rust_decimal`
-- Command-line interface with optional config file path
+- **Custom DSL**: Define investment strategies using a simple `.stock` file format
+- **Yahoo Finance Integration**: Fetch real stock price data for accurate simulations
+- **Pattern Testing**: Create and test different investment patterns
+- **Multiple Time Frames**: Test strategies across days, weeks, and years
+- **Batch Testing**: Test multiple investment amounts and time frames simultaneously
+- **VSCode Extension**: Syntax highlighting and language support for `.stock` files
 
 ## Installation
 
-Make sure you have Rust installed on your system. Then build the project:
+### Prerequisites
+- Rust 1.70+ (2024 edition)
+- Internet connection (for Yahoo Finance API calls)
+
+### Building from Source
 
 ```bash
+git clone https://github.com/yourusername/stock_simulator
+cd stock_simulator
 cargo build --release
 ```
 
@@ -22,70 +29,115 @@ cargo build --release
 
 ### Basic Usage
 
-Run the simulator with the default `config.toml` file:
-
+Run with default `Test.stock` file:
 ```bash
 cargo run
 ```
 
-### Using a Custom Configuration File
-
+Run with a specific `.stock` file:
 ```bash
-cargo run -- --config path/to/your/config.toml
+cargo run -- -s my_strategy.stock
 ```
 
-Or use the short flag:
+### DSL Syntax
 
-```bash
-cargo run -- -c path/to/your/config.toml
+Create a `.stock` file with the following syntax:
+
+```stock
+// Define investment amounts to test (in dollars)
+INVEST 100,500,1000
+
+// Define time frames to test
+TIME 30d,12w,1y
+
+// Define individual investments (ticker and display name)
+INVESTMENT AAPL Apple
+INVESTMENT MSFT Microsoft
+INVESTMENT GOOGL Google
+
+// Create patterns (sequences of investments)
+PATTERN TechGrowth Apple,Microsoft,Google
+PATTERN Conservative Apple,Apple,Microsoft
+
+// Run tests on specific patterns
+TEST TechGrowth
+TEST Conservative
 ```
 
-## Configuration
+#### DSL Commands
 
-The simulator uses TOML configuration files. Here's the structure:
+- `INVEST <amounts>`: Comma-separated list of investment amounts in dollars
+- `TIME <periods>`: Comma-separated list of time periods (format: `<number><unit>` where unit is `d`, `w`, or `y`)
+- `INVESTMENT <ticker> <name>`: Define a stock investment with ticker symbol and display name
+- `PATTERN <name> <investments>`: Create a named pattern of investments
+- `TEST <pattern>`: Run simulation tests on a specific pattern
 
-```toml
-initial_amount = 100.0    # Starting investment amount
-weeks = 52               # Number of weeks to simulate
-gains = [0.09, 0.50]     # Weekly gains for each stock (cycles through)
-```
-
-### Configuration Parameters
-
-- `initial_amount`: The starting investment amount (decimal)
-- `weeks`: Number of weeks to simulate the investment
-- `gains`: Array of weekly gain amounts for different stocks. The simulator cycles through these values.
-
-## Example
-
-With the default configuration:
-- Initial investment: $100.00
-- Simulation period: 52 weeks
-- Stock gains: $0.09 and $0.50 (alternating weekly)
-
-The simulator will show:
-- Final total amount
-- Total amount gained
-- Percentage gain
-
-## Output
+### Example Output
 
 ```
-Simulating 52 weeks with an initial amount of 100 from "config.toml"...
+Stock Simulator - Processing "Test.stock"
 
---- Results ---
-Final Total Amount: 115.34
-Total Amount Gained: 15.34
-Percentage Gain: 15.34%
+Investment amounts: [10, 100, 1000]
+Time frames: ["10d", "12w", "2y"]
+Investments: ["AAPL", "MSFT"]
+Patterns: ["MyPattern", "MyPattern2"]
+Tests to run: ["MyPattern", "MyPattern2"]
+
+Fetching stock data from Yahoo Finance...
+Running simulations...
+
+Results:
+Pattern: MyPattern, Amount: $100, Time: 12w
+  Initial: $100.00, Final: $125.50, Gain: 25.50%
 ```
 
-## License
+## Project Structure
 
-This project is licensed under the terms specified in the LICENSE file.
+```
+├── src/
+│   ├── main.rs           # CLI entry point and argument parsing
+│   ├── dsl.rs            # DSL parser and data structures
+│   ├── simulator.rs      # Core simulation logic
+│   └── yahoo_finance.rs  # Yahoo Finance API integration
+├── vscode-extension/     # VSCode extension for .stock files
+├── Test.stock           # Example DSL file
+├── config.toml          # Configuration file
+└── Cargo.toml          # Rust dependencies and metadata
+```
+
+## VSCode Extension
+
+The project includes a VSCode extension that provides:
+- Syntax highlighting for `.stock` files
+- Language configuration for better editing experience
+
+Install the extension by copying the `vscode-extension` folder to your VSCode extensions directory.
 
 ## Dependencies
 
-- `clap`: Command-line argument parsing
-- `rust_decimal`: Precise decimal arithmetic
-- `serde`: Serialization/deserialization
-- `toml`: TOML configuration file parsing
+- **serde**: Serialization/deserialization
+- **clap**: Command-line argument parsing
+- **rust_decimal**: Precise decimal arithmetic for financial calculations
+- **tokio**: Async runtime for API calls
+- **reqwest**: HTTP client for Yahoo Finance API
+- **chrono**: Date and time handling
+
+## Configuration
+
+The `config.toml` file can be used to configure API endpoints and other settings.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+This tool is for educational and research purposes only. Past performance does not guarantee future results. Always consult with financial professionals before making investment decisions.
